@@ -79,7 +79,13 @@ jobs:
           password: ${{ secrets.DOCKER_PASSWORD }}
 
       - name: Copy compose.yml to droplet
-        run: scp -o StrictHostKeyChecking=no compose.yml root@${{ vars.DROPLET_IP }}:~
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ vars.DROPLET_IP }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          source: compose.yml
+          target: ~/
 
       - name: Deploy
         uses: appleboy/ssh-action@master
