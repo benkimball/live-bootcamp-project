@@ -1,6 +1,13 @@
-use crate::routes::*;
+use crate::{domain::AuthApiError, routes::*};
 use app_state::AppState;
-use axum::{routing::post, serve::Serve, Router};
+use axum::{
+    response::{IntoResponse, Response},
+    routing::post,
+    serve::Serve,
+    Json, Router,
+};
+use reqwest::StatusCode;
+use serde::{Deserialize, Serialize};
 use std::error::Error;
 use tokio::net::TcpListener;
 use tower_http::services::ServeDir;
@@ -9,6 +16,28 @@ pub mod app_state;
 pub mod domain;
 pub mod routes;
 pub mod services;
+
+// This struct represents an API error that will be serialized to JSON.
+#[derive(Serialize, Deserialize)]
+pub struct ErrorResponse {
+    pub error: String,
+}
+
+impl IntoResponse for AuthApiError {
+    fn into_response(self) -> Response {
+        let (status, error_message) = match self {
+            AuthApiError::UserAlreadyExists => (StatusCode::CONFLICT, "User already exists"),
+            AuthApiError::InvalidCredentials => (StatusCode::BAD_REQUEST, "Invalid credentials"),
+            AuthApiError::UnexpectedError => {
+                (StatusCode::INTERNAL_SERVER_ERROR, "Unexpected error")
+            }
+        };
+        let body = Json(ErrorResponse {
+            error: error_message.to_string(),
+        });
+        (status, body).into_response()
+    }
+}
 
 // This struct encapsulates our application-related logic.
 pub struct Application {
