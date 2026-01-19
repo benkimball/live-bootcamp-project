@@ -3,7 +3,7 @@ use serde_json::json;
 use crate::helpers::{get_random_email, TestApp};
 
 #[tokio::test]
-async fn signup_returns_200() {
+async fn signup_returns_201_if_valid_input() {
     let app = TestApp::new().await;
     let random_email = get_random_email();
     let response = app
@@ -13,7 +13,7 @@ async fn signup_returns_200() {
             "requires2FA": true
         }))
         .await;
-    assert_eq!(response.status().as_u16(), 200);
+    assert_eq!(response.status().as_u16(), 201);
 }
 
 #[tokio::test]
