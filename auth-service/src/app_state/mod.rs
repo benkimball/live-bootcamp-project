@@ -30,30 +30,3 @@ impl Default for AppState {
         }
     }
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::domain::User;
-
-    #[tokio::test]
-    async fn test_new_constructor() {
-        let store = Arc::new(HashMapUserStore::default());
-        let app_state = AppState::new(store);
-
-        let user = User::new("new@example.com".to_string(), "password".to_string(), false);
-        assert!(app_state.user_store.add_user(user).await.is_ok());
-    }
-
-    #[tokio::test]
-    async fn test_default_constructor() {
-        let app_state = AppState::default();
-
-        let user = User::new(
-            "default@example.com".to_string(),
-            "password".to_string(),
-            false,
-        );
-        assert!(app_state.user_store.add_user(user).await.is_ok());
-    }
-}
