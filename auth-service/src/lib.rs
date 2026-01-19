@@ -8,7 +8,7 @@ use axum::{
 };
 use reqwest::StatusCode;
 use serde::{Deserialize, Serialize};
-use std::error::Error;
+use std::{error::Error, sync::Arc};
 use tokio::net::TcpListener;
 use tower_http::services::ServeDir;
 
@@ -56,7 +56,7 @@ impl Application {
             .route("/verify-2fa", post(verify_2fa))
             .route("/logout", post(logout))
             .route("/verify-token", post(verify_token))
-            .with_state(app_state);
+            .with_state(Arc::new(app_state));
 
         let listener = tokio::net::TcpListener::bind(address).await?;
         let address = listener.local_addr()?.to_string();

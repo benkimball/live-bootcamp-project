@@ -1,25 +1,23 @@
 use axum::{extract::State, response::IntoResponse, Json};
 use reqwest::StatusCode;
 use serde::{Deserialize, Serialize};
+use std::sync::Arc;
 
 use crate::{
     app_state::AppState,
     domain::{AuthApiError, User},
-    services::UserStoreError,
 };
 
 pub async fn signup(
-    State(state): State<AppState>,
+    State(state): State<Arc<AppState>>,
     Json(request): Json<SignupRequest>,
 ) -> Result<impl IntoResponse, AuthApiError> {
     let user = User::try_from(request)?;
-    state.user_store.write().await.add_user(user).map_err(
-        |user_store_error| match user_store_error {
-            UserStoreError::UserAlreadyExists => AuthApiError::UserAlreadyExists,
-            UserStoreError::InvalidCredentials => AuthApiError::InvalidCredentials,
-            _ => AuthApiError::UnexpectedError,
-        },
-    )?;
+    state
+        .user_store
+        .add_user(user)
+        .await
+        .map_err(AuthApiError::from)?;
     let response = Json(SignupResponse {
         message: "User created successfully!".to_string(),
     });

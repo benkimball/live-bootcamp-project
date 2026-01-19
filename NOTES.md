@@ -1,2 +1,2 @@
 * Sprint 1, Task 6: You can destructure a wrapper type in a function parameter. E.g. `fn destruct(Wrapper(n): Wrapper) -> u32 { n }`
-*
+* Sprint 2, Task 3: Trait objects (e.g., `dyn UserStore`) are dynamically-sized types. As such they cannot be used as function parameters or return types. Instead, you can wrap them in `Arc` or another smart pointer, and pass that. Use `Arc<dyn T>` for shared ownership, `Box<dyn T>` for single ownership, and `&dyn T` for borrowing.

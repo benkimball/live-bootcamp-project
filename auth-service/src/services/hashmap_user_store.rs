@@ -1,66 +1,59 @@
-use crate::domain::User;
+use crate::domain::{User, UserStore, UserStoreError};
 use std::collections::HashMap;
+use std::sync::Arc;
+use tokio::sync::RwLock;
 
-#[derive(Debug, PartialEq, Default)]
-pub enum UserStoreError {
-    UserAlreadyExists,
-    UserNotFound,
-    InvalidCredentials,
-    #[default]
-    UnexpectedError,
-}
+type UserStoreType = Arc<RwLock<HashMap<String, User>>>;
 
-#[derive(Default, Debug)]
+#[derive(Debug)]
 pub struct HashMapUserStore {
-    users: HashMap<String, User>,
+    users: UserStoreType,
 }
 
-impl From<Vec<User>> for HashMapUserStore {
-    fn from(users: Vec<User>) -> Self {
-        let mut store = HashMapUserStore::default();
-        for user in users {
-            store.add_user(user).unwrap();
+impl Default for HashMapUserStore {
+    fn default() -> Self {
+        Self {
+            users: Arc::new(RwLock::new(HashMap::new())),
         }
-        store
     }
 }
 
-impl HashMapUserStore {
-    pub fn add_user(&mut self, user: User) -> Result<(), UserStoreError> {
-        if self.users.contains_key(&user.email) {
+#[async_trait::async_trait]
+impl UserStore for HashMapUserStore {
+    async fn add_user(&self, user: User) -> Result<(), UserStoreError> {
+        let mut users = self.users.write().await;
+        if users.contains_key(&user.email) {
             Err(UserStoreError::UserAlreadyExists)
         } else {
-            self.users.insert(user.email.clone(), user);
+            users.insert(user.email.clone(), user);
             Ok(())
         }
     }
 
-    pub fn get_user(&self, email: &str) -> Result<User, UserStoreError> {
-        self.users
+    async fn get_user(&self, email: &str) -> Result<User, UserStoreError> {
+        let users = self.users.read().await;
+        users
             .get(email)
             .cloned()
             .ok_or(UserStoreError::UserNotFound)
     }
 
-    pub fn validate_user(&mut self, email: &str, password: &str) -> Result<(), UserStoreError> {
-        if self.users.contains_key(email) {
-            if let Some(user) = self.users.get(email) {
-                if user.password == password {
-                    Ok(())
-                } else {
-                    Err(UserStoreError::InvalidCredentials)
-                }
+    async fn validate_user(&self, email: &str, password: &str) -> Result<(), UserStoreError> {
+        let users = self.users.read().await;
+        if let Some(user) = users.get(email) {
+            if user.password == password {
+                Ok(())
             } else {
-                Err(UserStoreError::UserNotFound)
+                Err(UserStoreError::InvalidCredentials)
             }
         } else {
             Err(UserStoreError::UserNotFound)
         }
     }
 
-    #[allow(unused)]
-    pub fn delete(&mut self, email: &str) -> Result<User, UserStoreError> {
-        self.users.remove(email).ok_or(UserStoreError::UserNotFound)
+    async fn delete_user(&self, email: &str) -> Result<User, UserStoreError> {
+        let mut users = self.users.write().await;
+        users.remove(email).ok_or(UserStoreError::UserNotFound)
     }
 }
 
@@ -68,35 +61,41 @@ impl HashMapUserStore {
 mod tests {
     use super::*;
 
-    fn get_test_fixture() -> HashMapUserStore {
-        HashMapUserStore::from(vec![
-            User::new(
+    async fn get_test_fixture() -> HashMapUserStore {
+        let store = HashMapUserStore::default();
+        store
+            .add_user(User::new(
                 String::from("test@example.com"),
                 String::from("password"),
                 false,
-            ),
-            User::new(
+            ))
+            .await
+            .unwrap();
+        store
+            .add_user(User::new(
                 String::from("test2@example.com"),
                 String::from("password2"),
                 true,
-            ),
-        ])
+            ))
+            .await
+            .unwrap();
+        store
     }
 
-    #[test]
-    fn test_add_new_user_succeeds() {
-        let mut store = get_test_fixture();
+    #[tokio::test]
+    async fn test_add_new_user_succeeds() {
+        let store = get_test_fixture().await;
         let new_user = User::new(
             String::from("test3@example.com"),
             String::from("password"),
             false,
         );
-        assert!(store.add_user(new_user).is_ok());
+        assert!(store.add_user(new_user).await.is_ok());
     }
 
-    #[test]
-    fn test_add_existing_user_fails() {
-        let mut store = get_test_fixture();
+    #[tokio::test]
+    async fn test_add_existing_user_fails() {
+        let store = get_test_fixture().await;
         let new_user = User::new(
             String::from("test@example.com"),
             String::from("password"),
@@ -106,71 +105,80 @@ mod tests {
             UserStoreError::UserAlreadyExists,
             store
                 .add_user(new_user)
+                .await
                 .expect_err("New user should already exist in fixture")
         );
     }
 
-    #[test]
-    fn test_get_user_by_existing_email_succeeds() {
-        let store = get_test_fixture();
+    #[tokio::test]
+    async fn test_get_user_by_existing_email_succeeds() {
+        let store = get_test_fixture().await;
         let user = store
             .get_user("test@example.com")
+            .await
             .expect("Test user should already exist in fixture");
         assert_eq!(user.email, "test@example.com");
     }
 
-    #[test]
-    fn test_get_user_by_nonexistent_email_fails() {
-        let store = get_test_fixture();
+    #[tokio::test]
+    async fn test_get_user_by_nonexistent_email_fails() {
+        let store = get_test_fixture().await;
         assert_eq!(
             UserStoreError::UserNotFound,
             store
                 .get_user("nope@example.com")
+                .await
                 .expect_err("Test user should not exist in fixture")
         );
     }
 
-    #[test]
-    fn test_validate_unknown_user_fails() {
-        let mut store = get_test_fixture();
+    #[tokio::test]
+    async fn test_validate_unknown_user_fails() {
+        let store = get_test_fixture().await;
         assert_eq!(
             UserStoreError::UserNotFound,
             store
                 .validate_user("nope@example.com", "password")
+                .await
                 .expect_err("Test user should not exist in fixture")
         );
     }
 
-    #[test]
-    fn test_validate_user_with_correct_credentials_succeeds() {
-        let mut store = get_test_fixture();
-        assert!(store.validate_user("test@example.com", "password").is_ok());
+    #[tokio::test]
+    async fn test_validate_user_with_correct_credentials_succeeds() {
+        let store = get_test_fixture().await;
+        assert!(store
+            .validate_user("test@example.com", "password")
+            .await
+            .is_ok());
     }
 
-    #[test]
-    fn test_validate_user_with_incorrect_credentials_fails() {
-        let mut store = get_test_fixture();
+    #[tokio::test]
+    async fn test_validate_user_with_incorrect_credentials_fails() {
+        let store = get_test_fixture().await;
         assert_eq!(
             UserStoreError::InvalidCredentials,
             store
                 .validate_user("test@example.com", "wrong_password")
+                .await
                 .expect_err("Test user should not exist in fixture")
         );
     }
 
-    #[test]
-    fn test_delete_user_by_existing_email_succeeds() {
-        let mut store = get_test_fixture();
-        assert!(store.delete("test@example.com").is_ok());
+    #[tokio::test]
+    async fn test_delete_user_by_existing_email_succeeds() {
+        let store = get_test_fixture().await;
+        assert!(store.delete_user("test@example.com").await.is_ok());
     }
 
-    #[test]
-    fn test_delete_user_by_nonexistent_email_fails() {
-        let mut store = get_test_fixture();
+    #[tokio::test]
+    async fn test_delete_user_by_nonexistent_email_fails() {
+        let store = get_test_fixture().await;
         assert_eq!(
             UserStoreError::UserNotFound,
             store
-                .delete("nope@example.com")
+                .delete_user("nope@example.com")
+                .await
                 .expect_err("Test user should not exist in fixture")
         );
     }

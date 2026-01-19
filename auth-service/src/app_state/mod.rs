@@ -1,16 +1,59 @@
-use crate::services::HashMapUserStore;
+use crate::{domain::UserStore, services::HashMapUserStore};
 use std::sync::Arc;
-use tokio::sync::RwLock;
 
-pub type UserStoreType = Arc<RwLock<HashMapUserStore>>;
-
-#[derive(Clone, Default)]
+/// Axum application state
+/// Only includes a user store for now, will likely include more state in the future.
 pub struct AppState {
-    pub user_store: UserStoreType,
+    // The Arc is necessary because trait objects (dyn UserStore) are
+    // dynamically-sized types (DSTs) whose size is not known at compile time.
+    pub user_store: Arc<dyn UserStore>,
 }
 
 impl AppState {
-    pub fn new(user_store: UserStoreType) -> Self {
+    pub fn new(user_store: Arc<dyn UserStore>) -> Self {
         Self { user_store }
+    }
+}
+
+/// Create a new AppState from a concrete user store.
+impl<T: UserStore + 'static> From<T> for AppState {
+    fn from(store: T) -> Self {
+        Self::new(Arc::new(store))
+    }
+}
+
+/// Create a new AppState defaulting to a HashMapUserStore user store.
+impl Default for AppState {
+    fn default() -> Self {
+        Self {
+            user_store: Arc::new(HashMapUserStore::default()),
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::domain::User;
+
+    #[tokio::test]
+    async fn test_new_constructor() {
+        let store = Arc::new(HashMapUserStore::default());
+        let app_state = AppState::new(store);
+
+        let user = User::new("new@example.com".to_string(), "password".to_string(), false);
+        assert!(app_state.user_store.add_user(user).await.is_ok());
+    }
+
+    #[tokio::test]
+    async fn test_default_constructor() {
+        let app_state = AppState::default();
+
+        let user = User::new(
+            "default@example.com".to_string(),
+            "password".to_string(),
+            false,
+        );
+        assert!(app_state.user_store.add_user(user).await.is_ok());
     }
 }
