@@ -1,10 +1,43 @@
-use crate::routes::*;
-use axum::{routing::post, serve::Serve, Router};
-use std::error::Error;
+use crate::{domain::AuthApiError, routes::*};
+use app_state::AppState;
+use axum::{
+    response::{IntoResponse, Response},
+    routing::post,
+    serve::Serve,
+    Json, Router,
+};
+use reqwest::StatusCode;
+use serde::{Deserialize, Serialize};
+use std::{error::Error, sync::Arc};
 use tokio::net::TcpListener;
 use tower_http::services::ServeDir;
 
+pub mod app_state;
+pub mod domain;
 pub mod routes;
+pub mod services;
+
+// This struct represents an API error that will be serialized to JSON.
+#[derive(Serialize, Deserialize)]
+pub struct ErrorResponse {
+    pub error: String,
+}
+
+impl IntoResponse for AuthApiError {
+    fn into_response(self) -> Response {
+        let (status, error_message) = match self {
+            AuthApiError::UserAlreadyExists => (StatusCode::CONFLICT, "User already exists"),
+            AuthApiError::InvalidCredentials => (StatusCode::BAD_REQUEST, "Invalid credentials"),
+            AuthApiError::UnexpectedError => {
+                (StatusCode::INTERNAL_SERVER_ERROR, "Unexpected error")
+            }
+        };
+        let body = Json(ErrorResponse {
+            error: error_message.to_string(),
+        });
+        (status, body).into_response()
+    }
+}
 
 // This struct encapsulates our application-related logic.
 pub struct Application {
@@ -15,15 +48,15 @@ pub struct Application {
 }
 
 impl Application {
-    pub async fn build(address: &str) -> Result<Self, Box<dyn Error>> {
-        let assets_dir = ServeDir::new("assets");
+    pub async fn build(app_state: AppState, address: &str) -> Result<Self, Box<dyn Error>> {
         let router = Router::new()
-            .fallback_service(assets_dir)
+            .fallback_service(ServeDir::new("assets"))
             .route("/signup", post(signup))
             .route("/login", post(login))
             .route("/verify-2fa", post(verify_2fa))
             .route("/logout", post(logout))
-            .route("/verify-token", post(verify_token));
+            .route("/verify-token", post(verify_token))
+            .with_state(Arc::new(app_state));
 
         let listener = tokio::net::TcpListener::bind(address).await?;
         let address = listener.local_addr()?.to_string();
