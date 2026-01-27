@@ -5,6 +5,7 @@ pub enum UserStoreError {
     UserAlreadyExists,
     UserNotFound,
     InvalidCredentials,
+    IncorrectCredentials,
     #[default]
     UnexpectedError,
 }

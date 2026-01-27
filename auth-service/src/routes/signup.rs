@@ -1,7 +1,6 @@
 use axum::{extract::State, response::IntoResponse, Json};
 use reqwest::StatusCode;
 use serde::{Deserialize, Serialize};
-use std::sync::Arc;
 
 use crate::{
     app_state::AppState,
@@ -9,13 +8,14 @@ use crate::{
 };
 
 pub async fn signup(
-    State(state): State<Arc<AppState>>,
+    State(state): State<AppState>,
     Json(request): Json<SignupRequest>,
 ) -> Result<impl IntoResponse, AuthApiError> {
-    let user = User::try_from(request)?;
     state
         .user_store
-        .add_user(user)
+        .write()
+        .await
+        .add_user(User::try_from(request)?)
         .await
         .map_err(AuthApiError::from)?;
     let response = Json(SignupResponse {

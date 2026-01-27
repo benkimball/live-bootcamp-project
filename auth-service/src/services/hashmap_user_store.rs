@@ -48,7 +48,7 @@ impl UserStore for HashMapUserStore {
             if user.password == *password {
                 Ok(())
             } else {
-                Err(UserStoreError::InvalidCredentials)
+                Err(UserStoreError::IncorrectCredentials)
             }
         } else {
             Err(UserStoreError::UserNotFound)
@@ -166,7 +166,7 @@ mod tests {
         let email: Email = "test@example.com".parse().expect("valid email");
         let wrong_password: Password = "wrong_password_long".parse().expect("valid password");
         assert_eq!(
-            UserStoreError::InvalidCredentials,
+            UserStoreError::IncorrectCredentials,
             store
                 .validate_user(&email, &wrong_password)
                 .await

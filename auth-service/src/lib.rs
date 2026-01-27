@@ -8,7 +8,7 @@ use axum::{
 };
 use reqwest::StatusCode;
 use serde::{Deserialize, Serialize};
-use std::{error::Error, sync::Arc};
+use std::error::Error;
 use tokio::net::TcpListener;
 use tower_http::services::ServeDir;
 
@@ -28,6 +28,7 @@ impl IntoResponse for AuthApiError {
         let (status, error_message) = match self {
             AuthApiError::UserAlreadyExists => (StatusCode::CONFLICT, "User already exists"),
             AuthApiError::InvalidCredentials => (StatusCode::BAD_REQUEST, "Invalid credentials"),
+            AuthApiError::IncorrectCredentials => (StatusCode::UNAUTHORIZED, "Unauthorized"),
             AuthApiError::UnexpectedError => {
                 (StatusCode::INTERNAL_SERVER_ERROR, "Unexpected error")
             }
@@ -56,7 +57,7 @@ impl Application {
             .route("/verify-2fa", post(verify_2fa))
             .route("/logout", post(logout))
             .route("/verify-token", post(verify_token))
-            .with_state(Arc::new(app_state));
+            .with_state(app_state);
 
         let listener = tokio::net::TcpListener::bind(address).await?;
         let address = listener.local_addr()?.to_string();

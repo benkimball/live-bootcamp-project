@@ -4,6 +4,7 @@ use super::UserStoreError;
 pub enum AuthApiError {
     UserAlreadyExists,
     InvalidCredentials,
+    IncorrectCredentials,
     #[default]
     UnexpectedError,
 }
@@ -13,6 +14,7 @@ impl From<UserStoreError> for AuthApiError {
         match error {
             UserStoreError::UserAlreadyExists => AuthApiError::UserAlreadyExists,
             UserStoreError::InvalidCredentials => AuthApiError::InvalidCredentials,
+            UserStoreError::IncorrectCredentials => AuthApiError::IncorrectCredentials,
             _ => Default::default(),
         }
     }
