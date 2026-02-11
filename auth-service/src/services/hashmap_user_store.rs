@@ -42,11 +42,11 @@ impl UserStore for HashMapUserStore {
         &self,
         email: &Email,
         password: &Password,
-    ) -> Result<(), UserStoreError> {
+    ) -> Result<User, UserStoreError> {
         let users = self.users.read().await;
         if let Some(user) = users.get(email) {
             if user.password == *password {
-                Ok(())
+                Ok(user.clone())
             } else {
                 Err(UserStoreError::IncorrectCredentials)
             }

@@ -14,7 +14,10 @@ pub enum UserStoreError {
 pub trait UserStore: Send + Sync {
     async fn add_user(&self, user: User) -> Result<(), UserStoreError>;
     async fn get_user(&self, email: &Email) -> Result<User, UserStoreError>;
-    async fn validate_user(&self, email: &Email, password: &Password)
-        -> Result<(), UserStoreError>;
+    async fn validate_user(
+        &self,
+        email: &Email,
+        password: &Password,
+    ) -> Result<User, UserStoreError>;
     async fn delete_user(&self, email: &Email) -> Result<User, UserStoreError>;
 }

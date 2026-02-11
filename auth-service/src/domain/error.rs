@@ -1,3 +1,5 @@
+use crate::utils::auth::GenerateTokenError;
+
 use super::UserStoreError;
 
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
@@ -15,6 +17,15 @@ impl From<UserStoreError> for AuthApiError {
             UserStoreError::UserAlreadyExists => AuthApiError::UserAlreadyExists,
             UserStoreError::InvalidCredentials => AuthApiError::InvalidCredentials,
             UserStoreError::IncorrectCredentials => AuthApiError::IncorrectCredentials,
+            _ => Default::default(),
+        }
+    }
+}
+
+impl From<GenerateTokenError> for AuthApiError {
+    fn from(error: GenerateTokenError) -> Self {
+        match error {
+            GenerateTokenError::TokenError(_) => AuthApiError::IncorrectCredentials,
             _ => Default::default(),
         }
     }

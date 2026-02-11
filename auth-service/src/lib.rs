@@ -16,6 +16,7 @@ pub mod app_state;
 pub mod domain;
 pub mod routes;
 pub mod services;
+pub mod utils;
 
 // This struct represents an API error that will be serialized to JSON.
 #[derive(Serialize, Deserialize)]
