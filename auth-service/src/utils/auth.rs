@@ -1,10 +1,9 @@
+use crate::domain::Email;
 use crate::utils::constants::{JWT_COOKIE_NAME, JWT_SECRET};
 use axum_extra::extract::cookie::{Cookie, SameSite};
 use chrono::{Duration, Utc};
 use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};
 use serde::{Deserialize, Serialize};
-
-use crate::domain::Email;
 
 pub const TOKEN_TTL_SECONDS: i64 = 600;
 
@@ -36,7 +35,7 @@ pub struct Claims {
 }
 
 // Create JWT auth token
-fn generate_auth_token(email: &Email) -> Result<String, GenerateTokenError> {
+pub fn generate_auth_token(email: &Email) -> Result<String, GenerateTokenError> {
     let delta =
         Duration::try_seconds(TOKEN_TTL_SECONDS).ok_or(GenerateTokenError::UnexpectedError)?;
     // create JWT expiration time

@@ -1,5 +1,6 @@
 use auth_service::{app_state::AppState, Application};
 use reqwest::cookie::Jar;
+use serde::Serialize;
 use serde_json::json;
 use std::sync::Arc;
 
@@ -80,9 +81,13 @@ impl TestApp {
             .expect("Failed to execute request")
     }
 
-    pub async fn post_verify_token(&self) -> reqwest::Response {
+    pub async fn post_verify_token<Body>(&self, body: &Body) -> reqwest::Response
+    where
+        Body: Serialize,
+    {
         self.http_client
             .post(format!("{}/verify-token", self.address))
+            .json(body)
             .send()
             .await
             .expect("Failed to execute request")

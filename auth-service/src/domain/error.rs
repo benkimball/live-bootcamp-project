@@ -32,3 +32,9 @@ impl From<GenerateTokenError> for AuthApiError {
         }
     }
 }
+
+impl From<jsonwebtoken::errors::Error> for AuthApiError {
+    fn from(_error: jsonwebtoken::errors::Error) -> Self {
+        AuthApiError::InvalidToken
+    }
+}
