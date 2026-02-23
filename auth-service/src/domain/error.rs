@@ -9,6 +9,8 @@ pub enum AuthApiError {
     IncorrectCredentials,
     #[default]
     UnexpectedError,
+    MissingToken,
+    InvalidToken,
 }
 
 impl From<UserStoreError> for AuthApiError {
@@ -25,7 +27,7 @@ impl From<UserStoreError> for AuthApiError {
 impl From<GenerateTokenError> for AuthApiError {
     fn from(error: GenerateTokenError) -> Self {
         match error {
-            GenerateTokenError::TokenError(_) => AuthApiError::IncorrectCredentials,
+            GenerateTokenError::TokenError(_) => AuthApiError::InvalidToken,
             _ => Default::default(),
         }
     }

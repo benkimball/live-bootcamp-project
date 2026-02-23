@@ -1,7 +1,11 @@
 use auth_service::{app_state::AppState, Application};
+use reqwest::cookie::Jar;
+use serde_json::json;
+use std::sync::Arc;
 
 pub struct TestApp {
     pub address: String,
+    pub cookie_jar: Arc<Jar>,
     pub http_client: reqwest::Client,
 }
 
@@ -16,9 +20,14 @@ impl TestApp {
         #[allow(clippy::let_underscore_future)]
         let _ = tokio::spawn(app.run());
 
-        let http_client = reqwest::Client::new();
+        let cookie_jar = Arc::new(Jar::default());
+        let http_client = reqwest::Client::builder()
+            .cookie_provider(cookie_jar.clone())
+            .build()
+            .expect("Failed to build client");
         Self {
             address,
+            cookie_jar,
             http_client,
         }
     }
@@ -77,6 +86,26 @@ impl TestApp {
             .send()
             .await
             .expect("Failed to execute request")
+    }
+
+    pub async fn create_user_and_log_in(&self) -> reqwest::Response {
+        let email = get_random_email();
+        let signup_body = json!({
+            "email": email,
+            "password": "password123",
+            "requires2FA": false,
+        });
+        let response = self.post_signup(&signup_body).await;
+        assert_eq!(response.status().as_u16(), 201);
+
+        let login_body = json!({
+            "email": email,
+            "password": "password123",
+        });
+        let response = self.post_login(&login_body).await;
+        assert_eq!(response.status().as_u16(), 200);
+
+        response
     }
 }
 
