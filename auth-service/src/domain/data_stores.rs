@@ -1,4 +1,4 @@
-use super::{Email, Password, User};
+use super::{Email, Password, Token, User};
 
 #[derive(Debug, PartialEq, Default)]
 pub enum UserStoreError {
@@ -20,4 +20,19 @@ pub trait UserStore: Send + Sync {
         password: &Password,
     ) -> Result<User, UserStoreError>;
     async fn delete_user(&self, email: &Email) -> Result<User, UserStoreError>;
+}
+
+#[derive(Debug, PartialEq, Eq, Hash)]
+pub enum BannedTokenResult {
+    TokenAlreadyBanned,
+    TokenBanned,
+    TokenNotBanned,
+    TokenUnbanned,
+}
+
+#[async_trait::async_trait]
+pub trait BannedTokenStore: Send + Sync {
+    async fn ban(&self, token: Token) -> BannedTokenResult;
+    async fn is_banned(&self, token: &Token) -> bool;
+    async fn unban(&self, token: &Token) -> BannedTokenResult;
 }
