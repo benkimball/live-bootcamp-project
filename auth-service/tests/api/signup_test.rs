@@ -1,4 +1,4 @@
-use crate::helpers::{get_random_email, TestApp};
+use crate::test_helpers::{get_random_email, TestApp};
 use auth_service::ErrorResponse;
 use serde_json::json;
 

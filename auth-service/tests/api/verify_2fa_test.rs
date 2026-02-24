@@ -1,4 +1,4 @@
-use crate::helpers::TestApp;
+use crate::test_helpers::TestApp;
 
 #[tokio::test]
 async fn verify_2fa_returns_200() {

@@ -1,7 +1,7 @@
 use auth_service::utils::constants::JWT_COOKIE_NAME;
 use serde_json::json;
 
-use crate::helpers::{get_random_email, TestApp};
+use crate::test_helpers::{get_random_email, TestApp};
 
 // 200 login successful
 #[tokio::test]

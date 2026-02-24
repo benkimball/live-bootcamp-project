@@ -1,4 +1,4 @@
-use crate::{helpers::TestApp, refute};
+use crate::{refute, test_helpers::TestApp};
 use auth_service::{domain::Token, utils::constants::JWT_COOKIE_NAME};
 use reqwest::Url;
 
