@@ -1,18 +1,36 @@
-use auth_service::{app_state::AppState, Application};
+use auth_service::{
+    app_state::{AppState, BannedTokenStoreType},
+    Application,
+};
 use reqwest::cookie::Jar;
 use serde::Serialize;
 use serde_json::json;
 use std::sync::Arc;
 
+// I don't like the look of `assert!(!...)`, hence:
+/// Refute a condition, asserting that it is false.
+#[macro_export]
+macro_rules! refute {
+    ($condition:expr) => {
+        assert!(!$condition, "Expected condition to be false");
+    };
+    ($condition:expr, $msg:expr) => {
+        assert!(!$condition, $msg);
+    };
+}
+
 pub struct TestApp {
     pub address: String,
     pub cookie_jar: Arc<Jar>,
     pub http_client: reqwest::Client,
+    pub banned_token_store: BannedTokenStoreType,
 }
 
 impl TestApp {
     pub async fn new() -> Self {
-        let app = Application::build(AppState::default(), "127.0.0.1:0")
+        let state = AppState::default();
+        let banned_token_store = state.banned_token_store.clone();
+        let app = Application::build(state, "127.0.0.1:0")
             .await
             .expect("Failed to build application");
 
@@ -30,6 +48,7 @@ impl TestApp {
             address,
             cookie_jar,
             http_client,
+            banned_token_store,
         }
     }
 

@@ -31,7 +31,7 @@ pub enum BannedTokenResult {
 }
 
 #[async_trait::async_trait]
-pub trait BannedTokenStore: Send + Sync {
+pub trait BannedTokenStore: std::fmt::Debug + Send + Sync {
     async fn ban(&self, token: Token) -> BannedTokenResult;
     async fn is_banned(&self, token: &Token) -> bool;
     async fn unban(&self, token: &Token) -> BannedTokenResult;
