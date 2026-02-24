@@ -54,9 +54,9 @@ pub fn generate_auth_token(email: &Email) -> Result<Token, GenerateTokenError> {
 }
 
 // Check if JWT auth token is valid by decoding it using the JWT secret
-pub async fn validate_token(token: &str) -> Result<Claims, jsonwebtoken::errors::Error> {
+pub async fn validate_token(token: &Token) -> Result<Claims, jsonwebtoken::errors::Error> {
     decode::<Claims>(
-        token,
+        token.to_string(),
         &DecodingKey::from_secret(JWT_SECRET.as_bytes()),
         &Validation::default(),
     )
@@ -109,8 +109,8 @@ mod tests {
     #[tokio::test]
     async fn test_validate_token_with_valid_token() {
         let email = "test@example.com".parse().unwrap();
-        let token_str = generate_auth_token(&email).unwrap().to_string();
-        let result = validate_token(&token_str).await.unwrap();
+        let token = generate_auth_token(&email).unwrap();
+        let result = validate_token(&token).await.unwrap();
         assert_eq!(result.sub, "test@example.com");
 
         let exp = Utc::now()
@@ -123,7 +123,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_validate_token_with_invalid_token() {
-        let token = "invalid_token".to_owned();
+        let token = Token::from("invalid_token");
         let result = validate_token(&token).await;
         assert!(result.is_err());
     }

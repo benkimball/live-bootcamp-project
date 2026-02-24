@@ -1,7 +1,9 @@
-use std::borrow::Cow;
-
 use serde::{Deserialize, Serialize};
+use std::{borrow::Cow, fmt::Display};
 
+/// Represents a token used for authentication. May be
+/// valid or invalid; the type makes no guarantees about
+/// the content or validity of the token.
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct Token(String);
 
@@ -23,7 +25,7 @@ impl From<Token> for Cow<'_, str> {
     }
 }
 
-impl std::fmt::Display for Token {
+impl Display for Token {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.0)
     }

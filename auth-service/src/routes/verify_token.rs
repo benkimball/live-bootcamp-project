@@ -1,4 +1,7 @@
-use crate::{domain::AuthApiError, utils::auth::validate_token};
+use crate::{
+    domain::{AuthApiError, Token},
+    utils::auth::validate_token,
+};
 use axum::Json;
 use reqwest::StatusCode;
 use serde::Deserialize;
@@ -12,5 +15,5 @@ pub async fn verify_token(
 
 #[derive(Deserialize)]
 pub struct VerifyTokenRequest {
-    pub token: String,
+    pub token: Token,
 }

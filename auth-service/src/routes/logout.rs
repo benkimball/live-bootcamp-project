@@ -2,13 +2,13 @@ use axum_extra::extract::CookieJar;
 use reqwest::StatusCode;
 
 use crate::{
-    domain::AuthApiError,
+    domain::{AuthApiError, Token},
     utils::{auth::validate_token, constants::JWT_COOKIE_NAME},
 };
 
 pub async fn logout(jar: CookieJar) -> Result<(CookieJar, StatusCode), AuthApiError> {
     let cookie = jar.get(JWT_COOKIE_NAME).ok_or(AuthApiError::MissingToken)?;
-    let token = cookie.value().to_owned();
+    let token = Token::from(cookie.value());
     let _claims = validate_token(&token)
         .await
         .map_err(|_| AuthApiError::InvalidToken)?;
