@@ -12,3 +12,6 @@ pub use error::AuthApiError;
 
 mod user;
 pub use user::User;
+
+mod token;
+pub use token::Token;

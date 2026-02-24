@@ -1,4 +1,4 @@
-use crate::domain::Email;
+use crate::domain::{Email, Token};
 use crate::utils::constants::{JWT_COOKIE_NAME, JWT_SECRET};
 use axum_extra::extract::cookie::{Cookie, SameSite};
 use chrono::{Duration, Utc};
@@ -14,7 +14,7 @@ pub fn generate_auth_cookie(email: &Email) -> Result<Cookie<'static>, GenerateTo
 }
 
 // Create cookie and set the value to the passed-in token string
-pub fn create_auth_cookie(token: String) -> Cookie<'static> {
+pub fn create_auth_cookie(token: Token) -> Cookie<'static> {
     Cookie::build((JWT_COOKIE_NAME, token))
         .path("/")
         .http_only(true)
@@ -35,7 +35,7 @@ pub struct Claims {
 }
 
 // Create JWT auth token
-pub fn generate_auth_token(email: &Email) -> Result<String, GenerateTokenError> {
+pub fn generate_auth_token(email: &Email) -> Result<Token, GenerateTokenError> {
     let delta =
         Duration::try_seconds(TOKEN_TTL_SECONDS).ok_or(GenerateTokenError::UnexpectedError)?;
     // create JWT expiration time
@@ -64,12 +64,13 @@ pub async fn validate_token(token: &str) -> Result<Claims, jsonwebtoken::errors:
 }
 
 // Create JWT auth token by encoding Claims using the JWT secret
-fn create_token(claims: &Claims) -> Result<String, jsonwebtoken::errors::Error> {
+fn create_token(claims: &Claims) -> Result<Token, jsonwebtoken::errors::Error> {
     encode(
         &Header::default(),
         &claims,
         &EncodingKey::from_secret(JWT_SECRET.as_bytes()),
     )
+    .map(Token::from)
 }
 
 #[cfg(test)]
@@ -89,10 +90,10 @@ mod tests {
 
     #[tokio::test]
     async fn test_create_auth_cookie() {
-        let token = String::from("test_token");
+        let token = Token::from("test_token");
         let cookie = create_auth_cookie(token.clone());
         assert_eq!(cookie.name(), JWT_COOKIE_NAME);
-        assert_eq!(cookie.value(), token);
+        assert_eq!(cookie.value(), token.to_string());
         assert_eq!(cookie.path(), Some("/"));
         assert_eq!(cookie.http_only(), Some(true));
         assert_eq!(cookie.same_site(), Some(SameSite::Lax));
@@ -102,14 +103,14 @@ mod tests {
     async fn test_generate_auth_token() {
         let email = "test@example.com".parse().unwrap();
         let result = generate_auth_token(&email).unwrap();
-        assert_eq!(result.split('.').count(), 3);
+        assert_eq!(result.to_string().split('.').count(), 3);
     }
 
     #[tokio::test]
     async fn test_validate_token_with_valid_token() {
         let email = "test@example.com".parse().unwrap();
-        let token = generate_auth_token(&email).unwrap();
-        let result = validate_token(&token).await.unwrap();
+        let token_str = generate_auth_token(&email).unwrap().to_string();
+        let result = validate_token(&token_str).await.unwrap();
         assert_eq!(result.sub, "test@example.com");
 
         let exp = Utc::now()
