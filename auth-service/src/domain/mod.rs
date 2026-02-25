@@ -15,3 +15,9 @@ pub use user::User;
 
 mod token;
 pub use token::Token;
+
+mod login_attempt_id;
+pub use login_attempt_id::LoginAttemptId;
+
+mod two_fa_code;
+pub use two_fa_code::TwoFACode;

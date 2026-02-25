@@ -1,8 +1,8 @@
 use tokio::sync::RwLock;
 
 use crate::{
-    domain::{BannedTokenStore, UserStore},
-    services::{HashMapUserStore, HashSetBannedTokenStore},
+    domain::{BannedTokenStore, TwoFACodeStore, UserStore},
+    services::{HashMapTwoFACodeStore, HashMapUserStore, HashSetBannedTokenStore},
 };
 use std::sync::Arc;
 
@@ -10,6 +10,7 @@ use std::sync::Arc;
 // dynamically-sized types (DSTs) whose size is not known at compile time.
 pub type UserStoreType = Arc<RwLock<dyn UserStore + Send + Sync>>;
 pub type BannedTokenStoreType = Arc<RwLock<dyn BannedTokenStore + Send + Sync>>;
+pub type TwoFACodeStoreType = Arc<RwLock<dyn TwoFACodeStore + Send + Sync>>;
 
 /// Axum application state
 /// Only includes a user store for now, will likely include more state in the future.
@@ -17,24 +18,20 @@ pub type BannedTokenStoreType = Arc<RwLock<dyn BannedTokenStore + Send + Sync>>;
 pub struct AppState {
     pub user_store: UserStoreType,
     pub banned_token_store: BannedTokenStoreType,
+    pub two_fa_code_store: TwoFACodeStoreType,
 }
 
 impl AppState {
-    pub fn new(user_store: UserStoreType, banned_token_store: BannedTokenStoreType) -> Self {
+    pub fn new(
+        user_store: UserStoreType,
+        banned_token_store: BannedTokenStoreType,
+        two_fa_code_store: TwoFACodeStoreType,
+    ) -> Self {
         Self {
             user_store,
             banned_token_store,
+            two_fa_code_store,
         }
-    }
-}
-
-/// Create a new AppState from a concrete user store.
-impl<T: UserStore + 'static> From<T> for AppState {
-    fn from(store: T) -> Self {
-        Self::new(
-            Arc::new(RwLock::new(store)),
-            Arc::new(RwLock::new(HashSetBannedTokenStore::default())),
-        )
     }
 }
 
@@ -44,6 +41,7 @@ impl Default for AppState {
         Self {
             user_store: Arc::new(RwLock::new(HashMapUserStore::default())),
             banned_token_store: Arc::new(RwLock::new(HashSetBannedTokenStore::default())),
+            two_fa_code_store: Arc::new(RwLock::new(HashMapTwoFACodeStore::default())),
         }
     }
 }

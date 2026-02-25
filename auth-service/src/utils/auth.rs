@@ -28,6 +28,16 @@ pub enum GenerateTokenError {
     UnexpectedError,
 }
 
+#[derive(Debug)]
+pub enum LoginAttemptIdError {
+    InvalidUuid(uuid::Error),
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum TwoFACodeError {
+    Invalid,
+}
+
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Claims {
     pub sub: String,

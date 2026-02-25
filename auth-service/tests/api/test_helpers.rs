@@ -1,5 +1,5 @@
 use auth_service::{
-    app_state::{AppState, BannedTokenStoreType},
+    app_state::{AppState, BannedTokenStoreType, TwoFACodeStoreType},
     Application,
 };
 use reqwest::cookie::Jar;
@@ -24,12 +24,14 @@ pub struct TestApp {
     pub cookie_jar: Arc<Jar>,
     pub http_client: reqwest::Client,
     pub banned_token_store: BannedTokenStoreType,
+    pub two_fa_code_store: TwoFACodeStoreType,
 }
 
 impl TestApp {
     pub async fn new() -> Self {
         let state = AppState::default();
         let banned_token_store = state.banned_token_store.clone();
+        let two_fa_code_store = state.two_fa_code_store.clone();
         let app = Application::build(state, "127.0.0.1:0")
             .await
             .expect("Failed to build application");
@@ -49,6 +51,7 @@ impl TestApp {
             cookie_jar,
             http_client,
             banned_token_store,
+            two_fa_code_store,
         }
     }
 

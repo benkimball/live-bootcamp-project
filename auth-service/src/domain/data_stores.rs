@@ -1,3 +1,5 @@
+use crate::domain::{LoginAttemptId, TwoFACode};
+
 use super::{Email, Password, Token, User};
 
 #[derive(Debug, PartialEq, Default)]
@@ -35,4 +37,22 @@ pub trait BannedTokenStore: std::fmt::Debug + Send + Sync {
     async fn ban(&self, token: Token) -> BannedTokenResult;
     async fn is_banned(&self, token: &Token) -> bool;
     async fn unban(&self, token: &Token) -> BannedTokenResult;
+}
+
+#[async_trait::async_trait]
+pub trait TwoFACodeStore: std::fmt::Debug + Send + Sync {
+    async fn add(
+        &mut self,
+        email: Email,
+        login_attempt_id: LoginAttemptId,
+        code: TwoFACode,
+    ) -> Result<(), TwoFACodeStoreError>;
+    async fn remove(&mut self, email: &Email) -> Result<(), TwoFACodeStoreError>;
+    async fn get(&self, email: &Email) -> Result<(LoginAttemptId, TwoFACode), TwoFACodeStoreError>;
+}
+
+#[derive(Debug, PartialEq, Default)]
+pub enum TwoFACodeStoreError {
+    #[default]
+    EmailNotFound,
 }

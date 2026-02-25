@@ -1,6 +1,8 @@
-use crate::utils::auth::GenerateTokenError;
-
 use super::UserStoreError;
+use crate::{
+    domain::TwoFACodeStoreError,
+    utils::auth::{GenerateTokenError, LoginAttemptIdError},
+};
 
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub enum AuthApiError {
@@ -11,6 +13,7 @@ pub enum AuthApiError {
     UnexpectedError,
     MissingToken,
     InvalidToken,
+    InvalidTwoFaCode,
 }
 
 impl From<UserStoreError> for AuthApiError {
@@ -36,5 +39,17 @@ impl From<GenerateTokenError> for AuthApiError {
 impl From<jsonwebtoken::errors::Error> for AuthApiError {
     fn from(_error: jsonwebtoken::errors::Error) -> Self {
         AuthApiError::InvalidToken
+    }
+}
+
+impl From<LoginAttemptIdError> for AuthApiError {
+    fn from(_error: LoginAttemptIdError) -> Self {
+        AuthApiError::InvalidTwoFaCode
+    }
+}
+
+impl From<TwoFACodeStoreError> for AuthApiError {
+    fn from(_error: TwoFACodeStoreError) -> Self {
+        AuthApiError::UnexpectedError
     }
 }
